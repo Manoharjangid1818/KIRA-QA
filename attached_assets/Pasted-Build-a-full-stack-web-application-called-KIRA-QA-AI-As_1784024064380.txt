@@ -1,0 +1,246 @@
+Build a full-stack web application called KIRA QA AI Assistant.
+
+KIRA stands for KiwiQA Intelligent Retrieval Assistant.
+
+The application should be an AI assistant for software testing and QA work.
+
+Main Goal
+
+Create a working MVP where a QA engineer can:
+
+Register and log in.
+Open a ChatGPT-style AI chat.
+Analyze software requirements.
+Generate test scenarios.
+Generate detailed test cases.
+Generate bug reports.
+Save generated results.
+Technology Stack
+
+Frontend:
+
+React
+TypeScript
+Tailwind CSS
+
+Backend:
+
+Python
+FastAPI
+
+Database:
+
+PostgreSQL
+
+Authentication:
+
+Email/password login
+JWT authentication
+AI Integration
+
+Do not train an LLM.
+
+Create a configurable AI service that can connect to any OpenAI-compatible API.
+
+Later I will connect this application to a private Qwen3 model running through vLLM.
+
+Use environment variables:
+
+LLM_BASE_URL=
+LLM_API_KEY=
+LLM_MODEL=
+
+Do not hard-code the model or API URL.
+
+If no real LLM is configured, create a mock AI provider for development.
+
+Main Pages
+
+Create these pages:
+
+Login
+Register
+Dashboard
+AI Chat
+Requirement Analyzer
+Test Scenario Generator
+Test Case Generator
+Bug Report Generator
+Saved Results
+AI Chat
+
+Create a ChatGPT-style interface with:
+
+New conversation
+Conversation history
+User messages
+AI responses
+Markdown rendering
+Code formatting
+
+The AI should act like a senior software QA expert.
+
+Requirement Analyzer
+
+Input:
+
+Requirement text
+
+Output:
+
+Requirement summary
+Functional requirements
+Positive scenarios
+Negative scenarios
+Edge cases
+Missing information
+Risks
+Questions for the Product Owner or Business Analyst
+Test Scenario Generator
+
+Input:
+
+Module name
+Feature name
+Requirement
+
+Output:
+
+Scenario ID
+Scenario title
+Scenario description
+Scenario type
+Priority
+
+Include:
+
+Positive scenarios
+Negative scenarios
+Boundary scenarios
+Edge cases
+Test Case Generator
+
+Input:
+
+Module
+Requirement
+Number of test cases
+
+Output:
+
+Test Case ID
+Test Objective
+Preconditions
+Test Data
+Numbered Test Steps
+Expected Result
+Priority
+Test Type
+
+Expected results must be clear and testable.
+
+Bug Report Generator
+
+Input:
+
+Rough bug description
+Module
+Environment
+Known reproduction steps
+
+Output:
+
+Bug Title
+Module
+Environment
+Preconditions
+Steps to Reproduce
+Expected Result
+Actual Result
+Severity
+Priority
+
+Do not invent missing information. Clearly show "Information Required" when details are missing.
+
+Database
+
+Create models for:
+
+User
+Conversation
+Message
+GeneratedArtifact
+
+GeneratedArtifact types:
+
+Requirement Analysis
+Test Scenario
+Test Case
+Bug Report
+Security
+Hash passwords securely.
+Use JWT authentication.
+Use environment variables for secrets.
+Add input validation.
+Do not store passwords or API keys in code.
+Project Structure
+
+Use a clean structure:
+
+backend/
+app/
+main.py
+api/
+models/
+schemas/
+services/
+ai_service.py
+core/
+database/
+
+frontend/
+src/
+components/
+pages/
+services/
+types/
+
+UI
+
+Create a clean modern SaaS-style interface.
+
+Sidebar:
+
+Dashboard
+AI Chat
+Requirement Analyzer
+Test Scenarios
+Test Cases
+Bug Reports
+Saved Results
+Important AI Rules
+
+The AI must:
+
+Never claim that generated test cases were actually executed.
+Never claim that a bug is confirmed without evidence.
+Clearly mention assumptions.
+Never invent project information.
+Recommend human review for important outputs.
+Development Order
+
+Build in this order:
+
+Project structure
+Database
+Authentication
+Dashboard
+AI service
+AI Chat
+Requirement Analyzer
+Test Scenario Generator
+Test Case Generator
+Bug Report Generator
+Save generated results
+
+Start by building the complete working MVP. Keep the architecture modular so later we can add Qwen3 through vLLM, RAG, project access, automation script generation, and company-level features.
