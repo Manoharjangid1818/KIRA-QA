@@ -56,7 +56,14 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
         window.dispatchEvent(new Event('auth_error'));
       }
     }
-    throw new ApiError(response.status, data.detail || data.message || 'An error occurred');
+    const detail = data.detail;
+    const message =
+      Array.isArray(detail)
+        ? detail.map((e: any) => e.msg ?? String(e)).join('; ')
+        : typeof detail === 'string'
+        ? detail
+        : data.message ?? 'An error occurred';
+    throw new ApiError(response.status, message);
   }
 
   return data as T;
