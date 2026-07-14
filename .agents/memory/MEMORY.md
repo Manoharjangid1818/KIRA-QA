@@ -1,0 +1,4 @@
+- [Passlib + bcrypt incompatibility](passlib-bcrypt-incompatibility.md) — passlib's CryptContext breaks with modern bcrypt; hash with the bcrypt package directly.
+- [Global 401 auth-redirect pitfall](auth-401-redirect-pitfall.md) — only redirect to login on 401 if a token was actually sent, or anonymous auth probes bounce visitors off /register.
+- [Tailwind v4 @import ordering](tailwind-v4-import-ordering.md) — external @import (e.g. Google Fonts) must precede `@import 'tailwindcss'` in CSS-first config.
+- [Artifact run command cwd](artifact-run-command-cwd.md) — non-pnpm artifact `run`/`run.args` commands execute with cwd = the artifact's own directory, not the repo root.

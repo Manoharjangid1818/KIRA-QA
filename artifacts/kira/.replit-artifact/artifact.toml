@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "KIRA QA AI Assistant"
+version = "1.0.0"
+id = "artifacts/kira"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25050
+
+[services.development]
+run = "pnpm --filter @workspace/kira run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/kira", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/kira/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25050"
+BASE_PATH = "/"
