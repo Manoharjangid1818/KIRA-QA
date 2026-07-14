@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, Redirect, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import {
   Sidebar,
@@ -40,7 +40,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   }
 
   if (!user) {
-    return <>{children}</>; // Login/Register pages will render directly
+    return <Redirect to="/login" />;
   }
 
   return (
