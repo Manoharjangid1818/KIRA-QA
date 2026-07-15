@@ -1,0 +1,319 @@
+Now upgrade the existing **KIRA QA AI Assistant** by adding a complete **RAG system**.
+
+Do not rebuild the existing application.
+
+Keep the current:
+
+* Frontend
+* Backend
+* Authentication
+* Database
+* Qwen3 integration
+* vLLM integration
+* QA modules
+
+## Goal
+
+Allow users to upload approved documents and ask questions based on those documents.
+
+The flow should be:
+
+Document Upload
+→ Extract Text
+→ Clean Text
+→ Split into Chunks
+→ Generate Embeddings
+→ Store Embeddings
+→ User Asks Question
+→ Search Relevant Chunks
+→ Send Retrieved Context to Qwen3
+→ Generate Final Answer
+
+## Add a Knowledge Base Module
+
+Create a new sidebar item:
+
+* Knowledge Base
+
+Users should be able to:
+
+* Create a knowledge base
+* Upload documents
+* View uploaded documents
+* Delete documents
+* Search documents
+* Ask questions using the selected knowledge base
+
+## Supported File Types
+
+Support:
+
+* PDF
+* DOCX
+* TXT
+* CSV
+* Markdown
+
+Validate file type and file size before upload.
+
+## Database Models
+
+Create models for:
+
+KnowledgeBase
+
+Fields:
+
+* id
+* name
+* description
+* created_by
+* created_at
+
+Document
+
+Fields:
+
+* id
+* knowledge_base_id
+* file_name
+* file_type
+* file_size
+* uploaded_by
+* created_at
+* processing_status
+
+DocumentChunk
+
+Fields:
+
+* id
+* document_id
+* knowledge_base_id
+* chunk_text
+* chunk_index
+* embedding
+* metadata
+
+## Text Processing
+
+When a document is uploaded:
+
+1. Extract the text.
+2. Remove unnecessary empty spaces.
+3. Split the text into smaller chunks.
+4. Add some overlap between chunks.
+5. Generate embeddings.
+6. Store the chunks and embeddings.
+
+Keep chunk size and overlap configurable.
+
+Use environment variables:
+
+RAG_CHUNK_SIZE=
+RAG_CHUNK_OVERLAP=
+RAG_TOP_K=
+
+## Embedding Model
+
+Create a reusable embedding service.
+
+Do not hard-code the embedding model.
+
+Use:
+
+EMBEDDING_PROVIDER=
+EMBEDDING_MODEL=
+
+Keep the architecture flexible so the embedding model can be changed later.
+
+## Vector Search
+
+Use PostgreSQL with pgvector if available.
+
+If pgvector is not available in the current Replit environment, create a simple modular vector-search implementation for development.
+
+Keep the vector database layer separate so it can later be replaced with:
+
+* Qdrant
+* Weaviate
+* Milvus
+
+without changing the main application.
+
+## RAG Question Flow
+
+When the user asks a question:
+
+1. Convert the question into an embedding.
+2. Search for the most relevant document chunks.
+3. Retrieve the top matching chunks.
+4. Add the retrieved text to the prompt.
+5. Send the final prompt to Qwen3 through the existing AI service.
+6. Return the answer.
+
+The prompt should clearly tell the AI:
+
+"Answer using the provided document context.
+
+Do not invent information that is not available in the provided context.
+
+If the answer cannot be found in the provided documents, clearly say:
+
+'I could not find enough information in the available documents to answer this question.'
+
+Use general knowledge only when explicitly allowed."
+
+## Add Source References
+
+Every RAG answer should display the source documents used.
+
+Example:
+
+Sources:
+
+* QA_Testing_Guidelines.pdf
+* Automation_Standards.docx
+
+If possible, also show:
+
+* Document name
+* Relevant section or chunk
+* Similarity score
+
+Do not expose internal vector values.
+
+## Add RAG to Existing Modules
+
+Allow these modules to optionally use a selected knowledge base:
+
+* AI Chat
+* Requirement Analyzer
+* Test Scenario Generator
+* Test Case Generator
+* Bug Report Generator
+
+Add a dropdown:
+
+Knowledge Base:
+
+* None
+* General QA Knowledge
+* Project Knowledge
+* Other available knowledge bases
+
+If no knowledge base is selected, use normal Qwen3 behavior.
+
+If a knowledge base is selected, use RAG.
+
+## Add a RAG Service
+
+Create:
+
+`rag_service.py`
+
+Responsibilities:
+
+* Process uploaded documents
+* Split text into chunks
+* Generate embeddings
+* Store embeddings
+* Search relevant chunks
+* Return retrieved context
+* Return source information
+
+Keep this separate from:
+
+`ai_service.py`
+
+The AI service should only handle communication with Qwen3.
+
+## Add Document Processing Service
+
+Create:
+
+`document_service.py`
+
+Responsibilities:
+
+* Validate uploaded files
+* Extract text
+* Clean text
+* Handle unsupported files
+* Handle corrupted files
+
+## Processing Status
+
+Show document status:
+
+* Uploaded
+* Processing
+* Ready
+* Failed
+
+Do not allow a document to be used for RAG until processing is complete.
+
+## Error Handling
+
+Handle:
+
+* Unsupported file type
+* Empty document
+* Corrupted document
+* Embedding generation failure
+* Vector search failure
+* Qwen3 connection failure
+
+Show clear user-friendly error messages.
+
+## Security
+
+Users must only access knowledge bases they are authorized to use.
+
+Do not rely only on prompts for access control.
+
+Apply permission filtering before:
+
+* Viewing a knowledge base
+* Viewing documents
+* Searching embeddings
+* Retrieving document chunks
+* Sending context to Qwen3
+
+A user must never retrieve content from an unauthorized knowledge base.
+
+## Testing
+
+Add tests for:
+
+* Document upload
+* Invalid file type
+* Text extraction
+* Chunk creation
+* Embedding generation
+* Vector search
+* RAG answer generation
+* Missing information behavior
+* Source references
+* Unauthorized knowledge-base access
+
+## UI
+
+Create a Knowledge Base page with:
+
+* Create Knowledge Base button
+* Upload Document button
+* Document list
+* Processing status
+* Delete document
+* Ask Knowledge Base button
+
+Create a clean chat interface for asking questions from uploaded documents.
+
+## Important Rule
+
+The RAG system should help reduce hallucinations, but the AI must still clearly mention when information is missing.
+
+Do not claim that a document contains information unless that information was actually retrieved.
+
+Build this as an extension of the existing KIRA application without breaking the current features.

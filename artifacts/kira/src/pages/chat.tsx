@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useConversations, useConversation, useCreateConversation, useSendMessage } from "@/hooks/use-kira-api";
+import { useConversations, useConversation, useCreateConversation, useSendMessage, useKnowledgeBases } from "@/hooks/use-kira-api";
 import { format } from "date-fns";
 import { 
   MessageSquare, 
@@ -7,21 +7,25 @@ import {
   Send, 
   Bot,
   User,
-  Loader2
+  Loader2,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ReactMarkdown from 'react-markdown';
 import { cn } from "@/lib/utils";
 
 export default function Chat() {
   const [activeId, setActiveId] = useState<number | null>(null);
   const [input, setInput] = useState("");
+  const [selectedKbId, setSelectedKbId] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   
   const { data: conversations, isLoading: loadingConversations } = useConversations();
   const { data: activeConversation, isLoading: loadingChat } = useConversation(activeId);
+  const { data: knowledgeBases } = useKnowledgeBases();
   const createConversation = useCreateConversation();
   
   // Create a message mutation that optionally creates a conversation first
@@ -70,7 +74,7 @@ export default function Chat() {
       // In a real app we'd abstract this into a single hook. 
       // For now, we'll wait for the ID to be set before sending.
     } else {
-      sendMessageMutation.mutate({ content: messageText });
+      sendMessageMutation.mutate({ content: messageText, knowledge_base_id: selectedKbId });
     }
   };
 
@@ -90,13 +94,14 @@ export default function Chat() {
           // Manually send the first message since the hook is bound to old ID
           try {
             const token = localStorage.getItem('kira_auth_token');
-            await fetch(`/api/conversations/${newConv.id}/messages`, {
+            const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
+            await fetch(`${baseUrl}/api/conversations/${newConv.id}/messages`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
               },
-              body: JSON.stringify({ content: messageText })
+              body: JSON.stringify({ content: messageText, knowledge_base_id: selectedKbId })
             });
             // Force a refetch of conversations
             window.dispatchEvent(new Event('focus'));
@@ -263,7 +268,29 @@ export default function Chat() {
                 </div>
               )}
             </div>
-            <div className="p-4 bg-background border-t">
+            <div className="p-4 bg-background border-t space-y-2">
+              {knowledgeBases && knowledgeBases.length > 0 && (
+                <div className="max-w-3xl mx-auto flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <Select
+                    value={selectedKbId ? String(selectedKbId) : "none"}
+                    onValueChange={(v) => setSelectedKbId(v === "none" ? null : Number(v))}
+                  >
+                    <SelectTrigger className="h-8 text-xs w-56">
+                      <SelectValue placeholder="No Knowledge Base" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Knowledge Base</SelectItem>
+                      {knowledgeBases.map((kb) => (
+                        <SelectItem key={kb.id} value={String(kb.id)}>{kb.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedKbId && (
+                    <span className="text-xs text-muted-foreground">RAG enabled</span>
+                  )}
+                </div>
+              )}
               <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative">
                 <Input 
                   value={input}

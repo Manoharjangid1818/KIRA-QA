@@ -140,6 +140,42 @@ async def send_message(
         for m in conversation.messages
     ]
 
+    rag_sources: list[dict] | None = None
+
+    if payload.knowledge_base_id is not None:
+        from app.models.models import KnowledgeBase, ProcessingStatus
+        from app.services.rag_service import build_rag_prompt, retrieve_context
+
+        kb = (
+            db.query(KnowledgeBase)
+            .filter(
+                KnowledgeBase.id == payload.knowledge_base_id,
+                KnowledgeBase.created_by == user.id,
+            )
+            .first()
+        )
+        if kb is None:
+            raise HTTPException(status_code=404, detail="Knowledge base not found")
+
+        try:
+            context = await retrieve_context(
+                db, payload.knowledge_base_id, payload.content, user.id
+            )
+            if context.sources:
+                rag_prompt = build_rag_prompt(payload.content, context)
+                history[-1] = {"role": "user", "content": rag_prompt}
+                rag_sources = [
+                    {
+                        "document_id": s.document_id,
+                        "file_name": s.file_name,
+                        "chunk_index": s.chunk_index,
+                        "similarity_score": s.similarity_score,
+                    }
+                    for s in context.sources
+                ]
+        except Exception:
+            pass  # Degrade gracefully: fall back to normal chat if RAG fails
+
     try:
         reply = await ai_service.chat_reply(history)
     except AIServiceError as exc:
@@ -159,4 +195,5 @@ async def send_message(
     return SendMessageResponse(
         user_message=MessageOut.model_validate(user_message),
         assistant_message=MessageOut.model_validate(assistant_message),
+        rag_sources=rag_sources,
     )

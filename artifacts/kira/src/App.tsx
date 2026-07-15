@@ -15,6 +15,7 @@ import TestScenarios from '@/pages/test-scenarios';
 import TestCases from '@/pages/test-cases';
 import BugReports from '@/pages/bug-reports';
 import SavedResults from '@/pages/saved-results';
+import KnowledgeBasePage from '@/pages/knowledge-base';
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,9 @@ function Router() {
       </Route>
       <Route path="/saved-results/:id">
         <AppLayout><SavedResults /></AppLayout>
+      </Route>
+      <Route path="/knowledge-base">
+        <AppLayout><KnowledgeBasePage /></AppLayout>
       </Route>
       
       {/* Default redirect to dashboard or login handled by Auth hook in AppLayout/components */}

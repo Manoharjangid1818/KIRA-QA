@@ -108,6 +108,46 @@ export const TestCasesResponseSchema = z.object({
 });
 export type TestCasesResponse = z.infer<typeof TestCasesResponseSchema>;
 
+// Knowledge Base / RAG
+export const KnowledgeBaseSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  description: z.string(),
+  created_by: z.number(),
+  created_at: z.string(),
+  document_count: z.number(),
+});
+export type KnowledgeBase = z.infer<typeof KnowledgeBaseSchema>;
+
+export const DocumentSchema = z.object({
+  id: z.number(),
+  knowledge_base_id: z.number(),
+  file_name: z.string(),
+  file_type: z.string(),
+  file_size: z.number(),
+  uploaded_by: z.number(),
+  processing_status: z.enum(['uploaded', 'processing', 'ready', 'failed']),
+  error_message: z.string().nullable(),
+  created_at: z.string(),
+});
+export type KBDocument = z.infer<typeof DocumentSchema>;
+
+export const ChunkSourceSchema = z.object({
+  document_id: z.number(),
+  file_name: z.string(),
+  chunk_index: z.number(),
+  chunk_text: z.string(),
+  similarity_score: z.number(),
+});
+export type ChunkSource = z.infer<typeof ChunkSourceSchema>;
+
+export const RAGAnswerSchema = z.object({
+  answer: z.string(),
+  sources: z.array(ChunkSourceSchema),
+  knowledge_base_used: z.boolean(),
+});
+export type RAGAnswer = z.infer<typeof RAGAnswerSchema>;
+
 // Bug Report
 export const BugReportResponseSchema = z.object({
   title: z.string(),

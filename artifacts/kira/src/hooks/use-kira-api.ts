@@ -7,7 +7,10 @@ import type {
   RequirementAnalysis,
   TestScenariosResponse,
   TestCasesResponse,
-  BugReportResponse
+  BugReportResponse,
+  KnowledgeBase,
+  KBDocument,
+  RAGAnswer,
 } from '@/lib/types';
 
 export function useDashboard() {
@@ -50,10 +53,11 @@ export function useCreateConversation() {
 export function useSendMessage(conversationId: number) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { content: string }) => apiFetch<any>(`/conversations/${conversationId}/messages`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
+    mutationFn: (data: { content: string; knowledge_base_id?: number | null }) =>
+      apiFetch<any>(`/conversations/${conversationId}/messages`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conversations', conversationId] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
@@ -143,6 +147,99 @@ export function useGenerateBugReport() {
   return useMutation({
     mutationFn: (data: { description: string, module: string, environment: string, reproduction_steps: string }) => 
       apiFetch<BugReportResponse>('/bug-reports/generate', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  });
+}
+
+// --- Knowledge Base ---
+
+export function useKnowledgeBases() {
+  return useQuery({
+    queryKey: ['knowledge-bases'],
+    queryFn: () => apiFetch<KnowledgeBase[]>('/knowledge-bases'),
+  });
+}
+
+export function useKnowledgeBase(id: number | null) {
+  return useQuery({
+    queryKey: ['knowledge-bases', id],
+    queryFn: () => apiFetch<KnowledgeBase>(`/knowledge-bases/${id}`),
+    enabled: !!id,
+  });
+}
+
+export function useCreateKnowledgeBase() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { name: string; description?: string }) =>
+      apiFetch<KnowledgeBase>('/knowledge-bases', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['knowledge-bases'] }),
+  });
+}
+
+export function useDeleteKnowledgeBase() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => apiFetch(`/knowledge-bases/${id}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['knowledge-bases'] }),
+  });
+}
+
+export function useKBDocuments(kbId: number | null) {
+  return useQuery({
+    queryKey: ['kb-documents', kbId],
+    queryFn: () => apiFetch<KBDocument[]>(`/knowledge-bases/${kbId}/documents`),
+    enabled: !!kbId,
+    refetchInterval: (query) => {
+      // Auto-refresh while any doc is still processing
+      const docs = query.state.data as KBDocument[] | undefined;
+      const processing = docs?.some(d => d.processing_status === 'uploaded' || d.processing_status === 'processing');
+      return processing ? 3000 : false;
+    },
+  });
+}
+
+export function useUploadDocument(kbId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const token = localStorage.getItem('kira_auth_token');
+      const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '') + '/api';
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${baseUrl}/knowledge-bases/${kbId}/documents`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail ?? 'Upload failed');
+      }
+      return res.json() as Promise<KBDocument>;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['kb-documents', kbId] }),
+  });
+}
+
+export function useDeleteDocument(kbId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (docId: number) =>
+      apiFetch(`/knowledge-bases/${kbId}/documents/${docId}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['kb-documents', kbId] }),
+  });
+}
+
+export function useAskKnowledgeBase(kbId: number) {
+  return useMutation({
+    mutationFn: (data: { question: string; allow_general_knowledge?: boolean }) =>
+      apiFetch<RAGAnswer>(`/knowledge-bases/${kbId}/ask`, {
         method: 'POST',
         body: JSON.stringify(data),
       }),

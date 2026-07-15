@@ -23,7 +23,8 @@ import {
   Bug,
   Save,
   LogOut,
-  TerminalSquare
+  TerminalSquare,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -127,6 +128,14 @@ export function AppLayout({ children }: AppLayoutProps) {
                       <Link href="/saved-results">
                         <Save />
                         <span>Saved Artifacts</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={location.startsWith("/knowledge-base")}>
+                      <Link href="/knowledge-base">
+                        <BookOpen />
+                        <span>Knowledge Base</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

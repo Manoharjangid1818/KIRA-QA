@@ -26,9 +26,23 @@ class Settings:
     llm_api_key: str | None = os.environ.get("LLM_API_KEY") or None
     llm_model: str | None = os.environ.get("LLM_MODEL") or None
 
+    # Embedding provider (OpenAI-compatible /embeddings endpoint).
+    # If unset, falls back to a simple local hash-based embedding.
+    embedding_provider: str | None = os.environ.get("EMBEDDING_PROVIDER") or None
+    embedding_model: str | None = os.environ.get("EMBEDDING_MODEL") or None
+
+    # RAG chunking / retrieval settings
+    rag_chunk_size: int = int(os.environ.get("RAG_CHUNK_SIZE", "500"))
+    rag_chunk_overlap: int = int(os.environ.get("RAG_CHUNK_OVERLAP", "50"))
+    rag_top_k: int = int(os.environ.get("RAG_TOP_K", "5"))
+
     @property
     def ai_configured(self) -> bool:
         return bool(self.llm_base_url and self.llm_model)
+
+    @property
+    def embedding_configured(self) -> bool:
+        return bool(self.embedding_provider and self.embedding_model and self.llm_base_url)
 
 
 settings = Settings()

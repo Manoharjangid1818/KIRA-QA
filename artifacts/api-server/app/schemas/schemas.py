@@ -74,11 +74,13 @@ class ConversationDetailOut(BaseModel):
 
 class SendMessageRequest(BaseModel):
     content: str = Field(min_length=1)
+    knowledge_base_id: int | None = None
 
 
 class SendMessageResponse(BaseModel):
     user_message: MessageOut
     assistant_message: MessageOut
+    rag_sources: list[dict] | None = None
 
 
 # ---------- Requirement analyzer ----------
@@ -198,6 +200,58 @@ class GeneratedArtifactOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# ---------- Knowledge Base / RAG ----------
+
+
+class KnowledgeBaseCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    description: str = ""
+
+
+class KnowledgeBaseOut(BaseModel):
+    id: int
+    name: str
+    description: str
+    created_by: int
+    created_at: datetime
+    document_count: int = 0
+
+    model_config = {"from_attributes": True}
+
+
+class DocumentOut(BaseModel):
+    id: int
+    knowledge_base_id: int
+    file_name: str
+    file_type: str
+    file_size: int
+    uploaded_by: int
+    processing_status: str
+    error_message: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ChunkSourceOut(BaseModel):
+    document_id: int
+    file_name: str
+    chunk_index: int
+    chunk_text: str
+    similarity_score: float
+
+
+class RAGAnswerResponse(BaseModel):
+    answer: str
+    sources: list[ChunkSourceOut]
+    knowledge_base_used: bool
+
+
+class RAGQuestionRequest(BaseModel):
+    question: str = Field(min_length=1)
+    allow_general_knowledge: bool = False
 
 
 # ---------- Dashboard ----------
