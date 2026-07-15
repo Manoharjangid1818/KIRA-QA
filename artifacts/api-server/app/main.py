@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import artifacts, auth, bug_reports, conversations, dashboard, knowledge_base, requirement_analyzer, test_cases, test_scenarios
+from app.api import artifacts, attachments, auth, bug_reports, conversations, dashboard, knowledge_base, requirement_analyzer, test_cases, test_scenarios
 from app.database.db import Base, engine
 
 
@@ -63,3 +63,4 @@ app.include_router(test_cases.router, prefix="/api")
 app.include_router(bug_reports.router, prefix="/api")
 app.include_router(artifacts.router, prefix="/api")
 app.include_router(knowledge_base.router, prefix="/api")
+app.include_router(attachments.router, prefix="/api")

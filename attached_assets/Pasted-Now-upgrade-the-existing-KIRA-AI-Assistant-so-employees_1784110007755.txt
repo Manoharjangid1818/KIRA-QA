@@ -1,0 +1,493 @@
+Now upgrade the existing **KIRA AI Assistant** so employees can upload files directly inside the chat, similar to ChatGPT or Gemini.
+
+Do not rebuild the application.
+
+Keep the existing:
+
+* Employee Chat Interface
+* Admin Panel
+* Authentication
+* Qwen3 integration
+* vLLM integration
+* RAG system
+* Knowledge Bases
+* User permissions
+* Conversation history
+
+## Goal
+
+Allow employees to upload and analyze:
+
+* Images
+* PDFs
+* DOCX files
+* TXT files
+* CSV files
+* Markdown files
+
+Users should be able to upload a file directly in the chat and ask questions about it.
+
+Example:
+
+User uploads a PDF and asks:
+
+"Summarize this document."
+
+User uploads an image and asks:
+
+"What is shown in this image?"
+
+User uploads a screenshot and asks:
+
+"Find the UI issues in this screenshot."
+
+User uploads a requirement document and asks:
+
+"Generate test cases from this document."
+
+---
+
+# 1. Chat Attachment Feature
+
+Add an attachment button near the chat input.
+
+Users should be able to:
+
+* Upload files
+* Preview attachments
+* Remove attachments before sending
+* Send a message with one or more attachments
+
+Show uploaded files inside the conversation.
+
+Example:
+
+```text
+[PDF] Requirement_Document.pdf
+
+Summarize this document.
+```
+
+---
+
+# 2. Supported Documents
+
+Support:
+
+* PDF
+* DOCX
+* TXT
+* CSV
+* Markdown
+
+For uploaded documents:
+
+1. Validate the file.
+2. Extract the text.
+3. Clean the extracted text.
+4. Detect document size.
+5. Decide whether to send the full text or use chunking.
+6. Generate the answer.
+
+---
+
+# 3. Document Summarization
+
+Allow users to ask:
+
+* Summarize this document
+* Give me a short summary
+* Give me a detailed summary
+* Extract key points
+* Extract action items
+* Find risks
+* Find important dates
+* Find requirements
+* Generate test cases
+* Generate test scenarios
+* Generate questions from the document
+
+For large documents:
+
+* Split the document into chunks.
+* Process the relevant content.
+* Generate a final combined summary.
+
+Do not lose important information when summarizing large documents.
+
+---
+
+# 4. Ask Questions About Documents
+
+Users should be able to upload a document and ask questions such as:
+
+* What is this document about?
+* What are the main requirements?
+* What are the risks?
+* What is missing?
+* What are the acceptance criteria?
+* Generate test cases from this requirement.
+* Find inconsistencies in this document.
+
+The AI should answer using the uploaded document.
+
+If the information is not present, clearly say:
+
+"I could not find this information in the uploaded document."
+
+---
+
+# 5. Image Upload and Image Understanding
+
+Allow users to upload:
+
+* PNG
+* JPG
+* JPEG
+* WEBP
+
+Users should be able to ask:
+
+* What is in this image?
+* Describe this screenshot.
+* Read the text from this image.
+* Find UI issues.
+* Find alignment issues.
+* Find missing elements.
+* Compare expected and actual UI.
+* Generate a bug report from this screenshot.
+* Generate test scenarios from this screen.
+
+---
+
+# 6. Image Reader
+
+Create an image analysis service.
+
+The system should be able to:
+
+* Understand screenshots
+* Read visible text
+* Identify buttons
+* Identify fields
+* Identify labels
+* Identify tables
+* Identify forms
+* Identify error messages
+* Describe UI structure
+* Detect possible visual issues
+
+Example QA use case:
+
+User uploads an application screenshot.
+
+User asks:
+
+"Find UI issues."
+
+KIRA should analyze:
+
+* Alignment
+* Spacing
+* Overlapping elements
+* Missing labels
+* Inconsistent button sizes
+* Text visibility
+* Layout issues
+
+The result should clearly separate:
+
+* Observed Issue
+* Location
+* Expected Behavior
+* Possible Severity
+
+Do not claim an issue is confirmed unless it is clearly visible.
+
+---
+
+# 7. Multimodal Model Support
+
+Keep image understanding separate from the main text model.
+
+Create a configurable multimodal AI provider.
+
+Use environment variables:
+
+VISION_PROVIDER=
+VISION_MODEL=
+VISION_BASE_URL=
+VISION_API_KEY=
+
+Do not hard-code the vision model.
+
+The architecture should support:
+
+Text Requests
+→ Qwen3 Text Model
+
+Image Requests
+→ Vision-Capable Model
+
+Document Requests
+→ Document Processing
+→ Qwen3
+
+Future architecture should allow a vision-capable Qwen model or another compatible multimodal model to be added without changing the main application.
+
+---
+
+# 8. Automatic Request Routing
+
+The backend should automatically detect the input type.
+
+Example:
+
+Text Only
+→ Qwen3
+
+Document
+→ Document Processor
+→ Qwen3
+
+Image
+→ Vision Model
+
+Document + Question
+→ Extract Relevant Content
+→ Qwen3
+
+Image + Question
+→ Vision Model
+
+Image + Document + Question
+→ Process Both
+→ Generate Combined Answer
+
+Employees should not manually select the model.
+
+The backend should automatically route the request.
+
+---
+
+# 9. Temporary Chat Attachments
+
+Files uploaded inside a chat should be temporary conversation attachments by default.
+
+They should not automatically become part of the permanent company Knowledge Base.
+
+Flow:
+
+```text
+Employee Uploads File
+        ↓
+File Used in Current Conversation
+        ↓
+Temporary Processing
+        ↓
+Answer Generated
+```
+
+Only Admin should be able to move approved documents into a permanent Knowledge Base.
+
+---
+
+# 10. Admin Control
+
+Admin should be able to configure:
+
+* Allowed file types
+* Maximum file size
+* Maximum number of attachments
+* Vision model
+* Document processing settings
+* Whether users can upload files
+* Whether users can analyze images
+* Whether temporary files should be deleted automatically
+
+Admin should also be able to view:
+
+* Failed file processing
+* Storage usage
+* File upload activity
+* Processing errors
+
+---
+
+# 11. Security
+
+Validate every uploaded file.
+
+Check:
+
+* File extension
+* MIME type
+* File size
+* File content
+
+Do not execute uploaded files.
+
+Do not allow:
+
+* EXE
+* BAT
+* CMD
+* SH
+* APK
+* Unknown executable files
+
+Store uploaded files securely.
+
+Users should only access their own conversation attachments.
+
+Do not expose another user's uploaded files.
+
+---
+
+# 12. File Processing Status
+
+Show:
+
+* Uploading
+* Processing
+* Ready
+* Failed
+
+Example:
+
+```text
+Requirement.pdf
+Processing...
+```
+
+Then:
+
+```text
+Requirement.pdf
+Ready
+```
+
+---
+
+# 13. Suggested Employee Experience
+
+Employee opens KIRA.
+
+They can:
+
+* Type a normal question
+* Upload a document
+* Upload an image
+* Upload a screenshot
+* Ask for a summary
+* Ask questions about a file
+* Generate test cases from requirements
+* Generate bug reports from screenshots
+* Analyze UI issues
+* Read tables and visible text
+* Continue asking follow-up questions about the same attachment
+
+The interface should remain simple like ChatGPT or Gemini.
+
+---
+
+# 14. Example Workflows
+
+## Document Summary
+
+```text
+Employee
+↓
+Uploads PDF
+↓
+Asks "Summarize this"
+↓
+Document Text Extraction
+↓
+Qwen3
+↓
+Summary
+```
+
+## Image Analysis
+
+```text
+Employee
+↓
+Uploads Screenshot
+↓
+Asks "Find UI issues"
+↓
+Vision Model
+↓
+Image Analysis
+↓
+Response
+```
+
+## QA Requirement Analysis
+
+```text
+Employee
+↓
+Uploads Requirement Document
+↓
+Asks "Generate test cases"
+↓
+Document Processing
+↓
+Qwen3
+↓
+Structured Test Cases
+```
+
+## Bug Report from Screenshot
+
+```text
+Employee
+↓
+Uploads Screenshot
+↓
+Describes Issue
+↓
+Vision Analysis
+↓
+KIRA Generates Bug Report
+```
+
+---
+
+# Final Architecture
+
+```text
+Employee
+   ↓
+KIRA Chat Interface
+   ↓
+Text / Image / Document Detection
+   ↓
+Request Router
+   ├── Text → Qwen3
+   ├── Document → Document Processor → Qwen3
+   ├── Image → Vision Model
+   └── Company Question → RAG → Qwen3
+   ↓
+Final Response
+   ↓
+Employee
+```
+
+Keep all technical processing hidden from normal employees.
+
+The employee should only see:
+
+* Chat
+* File upload
+* Image upload
+* Conversation history
+* AI responses
+* Sources when relevant
+
+All model configuration, RAG configuration, document processing, permissions, and system settings must remain under Admin control.
+
+Do not break the existing KIRA application functionality.

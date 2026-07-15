@@ -157,3 +157,35 @@ class DocumentChunk(Base):
     chunk_metadata: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
 
     document: Mapped["Document"] = relationship(back_populates="chunks")
+
+
+# ── Chat Attachments (temporary, per-conversation) ────────────────────────────
+
+class AttachmentCategory(str, enum.Enum):
+    document = "document"
+    image = "image"
+
+
+class ChatAttachment(Base):
+    __tablename__ = "chat_attachments"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    conversation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("conversations.id", ondelete="CASCADE"), nullable=True
+    )
+    file_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_type: Mapped[str] = mapped_column(String(20), nullable=False)  # pdf, png, …
+    file_category: Mapped[str] = mapped_column(String(20), nullable=False)  # document | image
+    file_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    # For documents: cleaned extracted text
+    extracted_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # For images: base64-encoded bytes (sent to vision model)
+    file_data_b64: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="ready")
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )

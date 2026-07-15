@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.database.db import get_db
-from app.models.models import Conversation, Message, User
+from app.models.models import ChatAttachment, Conversation, Message, User
 from app.schemas.schemas import (
     ConversationCreate,
     ConversationDetailOut,
@@ -128,6 +128,25 @@ async def send_message(
 ) -> SendMessageResponse:
     conversation = _get_owned_conversation(db, conversation_id, user)
 
+    # ── Load & validate attachments ──────────────────────────────────────────
+    attachments: list[ChatAttachment] = []
+    if payload.attachment_ids:
+        for att_id in payload.attachment_ids:
+            att = (
+                db.query(ChatAttachment)
+                .filter(ChatAttachment.id == att_id, ChatAttachment.user_id == user.id)
+                .first()
+            )
+            if att is None:
+                raise HTTPException(status_code=404, detail=f"Attachment {att_id} not found")
+            attachments.append(att)
+        # Link attachments to this conversation for audit trail
+        for att in attachments:
+            if att.conversation_id is None:
+                att.conversation_id = conversation.id
+        db.commit()
+
+    # ── Save user message ─────────────────────────────────────────────────────
     user_message = Message(
         conversation_id=conversation.id, role="user", content=payload.content
     )
@@ -135,52 +154,127 @@ async def send_message(
     db.commit()
     db.refresh(user_message)
 
-    history = [
-        {"role": m.role, "content": m.content}
-        for m in conversation.messages
-    ]
-
+    history = [{"role": m.role, "content": m.content} for m in conversation.messages]
     rag_sources: list[dict] | None = None
 
-    if payload.knowledge_base_id is not None:
-        from app.models.models import KnowledgeBase, ProcessingStatus
-        from app.services.rag_service import build_rag_prompt, retrieve_context
+    # ── Route request based on attachment types ───────────────────────────────
+    image_attachments = [a for a in attachments if a.file_category == "image" and a.file_data_b64]
+    doc_attachments = [a for a in attachments if a.file_category == "document" and a.extracted_text]
+    failed_attachments = [a for a in attachments if a.status == "failed"]
 
-        kb = (
-            db.query(KnowledgeBase)
-            .filter(
-                KnowledgeBase.id == payload.knowledge_base_id,
-                KnowledgeBase.created_by == user.id,
+    # CASE 1: images present → vision model handles everything
+    if image_attachments:
+        from app.services.vision_service import VisionServiceError, analyze_image
+
+        # Build question: include document context if also present
+        question = payload.content
+        if doc_attachments:
+            doc_context = "\n\n".join(
+                f"[Document: {a.file_name}]\n{a.extracted_text[:3000]}" for a in doc_attachments
             )
-            .first()
-        )
-        if kb is None:
-            raise HTTPException(status_code=404, detail="Knowledge base not found")
+            question = f"{payload.content}\n\nAdditional context from uploaded documents:\n{doc_context}"
+        if failed_attachments:
+            question += "\n\n(Note: some attachments failed to process: " + ", ".join(a.file_name for a in failed_attachments) + ")"
+
+        # Use first image for vision; if multiple, describe all
+        img = image_attachments[0]
+        if len(image_attachments) > 1:
+            question += f"\n\n(There are {len(image_attachments)} images; analyzing the first: {img.file_name})"
 
         try:
-            context = await retrieve_context(
-                db, payload.knowledge_base_id, payload.content, user.id
+            reply = await analyze_image(
+                file_data_b64=img.file_data_b64,
+                file_type=img.file_type,
+                question=question,
+                file_name=img.file_name,
             )
-            if context.sources:
-                rag_prompt = build_rag_prompt(payload.content, context)
-                history[-1] = {"role": "user", "content": rag_prompt}
-                rag_sources = [
-                    {
-                        "document_id": s.document_id,
-                        "file_name": s.file_name,
-                        "chunk_index": s.chunk_index,
-                        "similarity_score": s.similarity_score,
-                    }
-                    for s in context.sources
-                ]
-        except Exception:
-            pass  # Degrade gracefully: fall back to normal chat if RAG fails
+        except VisionServiceError as exc:
+            raise HTTPException(status_code=502, detail=f"Vision model error: {exc}") from exc
 
-    try:
-        reply = await ai_service.chat_reply(history)
-    except AIServiceError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    # CASE 2: documents only → inject text into prompt, send to text LLM
+    elif doc_attachments:
+        doc_blocks = []
+        for att in doc_attachments:
+            # Truncate very large documents to avoid context overflows
+            text = att.extracted_text or ""
+            if len(text) > 12000:
+                text = text[:12000] + f"\n\n[… document truncated at 12 000 chars. Full length: {len(att.extracted_text)} chars]"
+            doc_blocks.append(f"=== Uploaded document: {att.file_name} ===\n{text}")
 
+        doc_context = "\n\n".join(doc_blocks)
+        augmented_content = (
+            f"{payload.content}\n\n"
+            f"The following document(s) have been uploaded for your analysis:\n\n"
+            f"{doc_context}\n\n"
+            f"Please answer the user's question using the content of the uploaded document(s). "
+            f"If the information is not present in the documents, clearly say so."
+        )
+        # Replace the last user turn with augmented content
+        if history:
+            history[-1] = {"role": "user", "content": augmented_content}
+        if failed_attachments:
+            note = "\n\n(Note: some attachments failed to process: " + ", ".join(a.file_name for a in failed_attachments) + ")"
+            history[-1]["content"] += note
+
+        # RAG still applies if KB selected
+        if payload.knowledge_base_id is not None:
+            from app.models.models import KnowledgeBase
+            from app.services.rag_service import build_rag_prompt, retrieve_context
+            kb = (
+                db.query(KnowledgeBase)
+                .filter(KnowledgeBase.id == payload.knowledge_base_id, KnowledgeBase.created_by == user.id)
+                .first()
+            )
+            if kb:
+                try:
+                    context = await retrieve_context(db, payload.knowledge_base_id, payload.content, user.id)
+                    if context.sources:
+                        rag_prompt = build_rag_prompt(payload.content, context)
+                        history[-1]["content"] += f"\n\nAdditional RAG context:\n{rag_prompt}"
+                        rag_sources = [
+                            {"document_id": s.document_id, "file_name": s.file_name,
+                             "chunk_index": s.chunk_index, "similarity_score": s.similarity_score}
+                            for s in context.sources
+                        ]
+                except Exception:
+                    pass
+
+        try:
+            reply = await ai_service.chat_reply(history)
+        except AIServiceError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    # CASE 3: no attachments → normal chat (with optional RAG)
+    else:
+        if payload.knowledge_base_id is not None:
+            from app.models.models import KnowledgeBase
+            from app.services.rag_service import build_rag_prompt, retrieve_context
+            kb = (
+                db.query(KnowledgeBase)
+                .filter(KnowledgeBase.id == payload.knowledge_base_id, KnowledgeBase.created_by == user.id)
+                .first()
+            )
+            if kb is None:
+                raise HTTPException(status_code=404, detail="Knowledge base not found")
+            try:
+                context = await retrieve_context(db, payload.knowledge_base_id, payload.content, user.id)
+                if context.sources:
+                    rag_prompt = build_rag_prompt(payload.content, context)
+                    history[-1] = {"role": "user", "content": rag_prompt}
+                    rag_sources = [
+                        {"document_id": s.document_id, "file_name": s.file_name,
+                         "chunk_index": s.chunk_index, "similarity_score": s.similarity_score}
+                        for s in context.sources
+                    ]
+            except Exception:
+                pass
+
+        try:
+            reply = await ai_service.chat_reply(history)
+        except AIServiceError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    # ── Save assistant message ────────────────────────────────────────────────
     assistant_message = Message(
         conversation_id=conversation.id, role="assistant", content=reply
     )

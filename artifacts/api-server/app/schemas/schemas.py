@@ -75,12 +75,29 @@ class ConversationDetailOut(BaseModel):
 class SendMessageRequest(BaseModel):
     content: str = Field(min_length=1)
     knowledge_base_id: int | None = None
+    attachment_ids: list[int] = []
 
 
 class SendMessageResponse(BaseModel):
     user_message: MessageOut
     assistant_message: MessageOut
     rag_sources: list[dict] | None = None
+
+
+# ---------- Chat Attachments ----------
+
+
+class ChatAttachmentOut(BaseModel):
+    id: int
+    file_name: str
+    file_type: str
+    file_category: str
+    file_size: int
+    status: str
+    error_message: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
 
 
 # ---------- Requirement analyzer ----------

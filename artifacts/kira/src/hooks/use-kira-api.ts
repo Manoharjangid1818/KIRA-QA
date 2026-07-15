@@ -53,7 +53,7 @@ export function useCreateConversation() {
 export function useSendMessage(conversationId: number) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { content: string; knowledge_base_id?: number | null }) =>
+    mutationFn: (data: { content: string; knowledge_base_id?: number | null; attachment_ids?: number[] }) =>
       apiFetch<any>(`/conversations/${conversationId}/messages`, {
         method: 'POST',
         body: JSON.stringify(data),
@@ -62,6 +62,36 @@ export function useSendMessage(conversationId: number) {
       queryClient.invalidateQueries({ queryKey: ['conversations', conversationId] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
     },
+  });
+}
+
+// ── Chat Attachments ──────────────────────────────────────────────────────────
+
+export function useUploadChatAttachment() {
+  const baseUrl = (import.meta.env.BASE_URL as string).replace(/\/$/, '');
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const token = localStorage.getItem('kira_auth_token');
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${baseUrl}/api/attachments`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: form,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(err.detail ?? 'Upload failed');
+      }
+      return res.json();
+    },
+  });
+}
+
+export function useDeleteChatAttachment() {
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<void>(`/attachments/${id}`, { method: 'DELETE' }),
   });
 }
 

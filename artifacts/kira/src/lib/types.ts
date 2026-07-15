@@ -109,6 +109,19 @@ export const TestCasesResponseSchema = z.object({
 export type TestCasesResponse = z.infer<typeof TestCasesResponseSchema>;
 
 // Knowledge Base / RAG
+// Chat Attachments
+export const ChatAttachmentSchema = z.object({
+  id: z.number(),
+  file_name: z.string(),
+  file_type: z.string(),
+  file_category: z.enum(["document", "image"]),
+  file_size: z.number(),
+  status: z.enum(["processing", "ready", "failed"]),
+  error_message: z.string().nullable(),
+  created_at: z.string(),
+});
+export type ChatAttachment = z.infer<typeof ChatAttachmentSchema>;
+
 export const KnowledgeBaseSchema = z.object({
   id: z.number(),
   name: z.string(),
