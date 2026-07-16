@@ -31,8 +31,9 @@ export default function Register() {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Redirect is handled by useAuth().redirectByRole
     if (user) {
-      setLocation("/dashboard");
+      setLocation(user.role === "super_admin" || user.role === "admin" ? "/admin" : "/chat");
     }
   }, [user, setLocation]);
 

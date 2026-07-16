@@ -100,7 +100,7 @@ export function UserLayout({ children }: UserLayoutProps) {
           </Button>
         </div>
 
-        {/* Nav tabs */}
+        {/* Sidebar links (chat-only items) */}
         <div className="flex border-b">
           {(["chats", "files", "profile"] as SidebarView[]).map(v => (
             <button
@@ -111,10 +111,11 @@ export function UserLayout({ children }: UserLayoutProps) {
                 view === v ? "text-foreground border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {v === "chats" ? "Chats" : v === "files" ? "Files" : "Profile"}
+              {v === "chats" ? "Chats" : v === "files" ? "My Files" : "Profile"}
             </button>
           ))}
         </div>
+
 
         {/* Content area */}
         {view === "chats" && (

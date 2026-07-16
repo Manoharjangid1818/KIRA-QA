@@ -1,22 +1,26 @@
 [project]
-name = "repl-nix-workspace"
+name = "kira-qa"
 version = "0.1.0"
-description = "Add your description here"
+description = "KIRA QA - AI-powered Quality Assurance Assistant"
 requires-python = ">=3.11"
 dependencies = [
     "bcrypt>=5.0.0",
     "email-validator>=2.3.0",
-    "fastapi>=0.139.0",
+    "fastapi>=0.115.0",
     "httpx>=0.28.1",
-    "numpy>=2.4.6",
+    "numpy>=2.0.0",
     "passlib[bcrypt]>=1.7.4",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.7.0",
+    "pypdf>=5.0.0",
+    "python-docx>=1.1.0",
+    "python-jose[cryptography]>=3.3.0",
+    "python-multipart>=0.0.18",
+    "sqlalchemy>=2.0.36",
+    "uvicorn[standard]>=0.34.0",
+]
+
+[project.optional-dependencies]
+postgres = [
     "psycopg2-binary>=2.9.12",
-    "pydantic>=2.13.4",
-    "pydantic-settings>=2.14.2",
-    "pypdf>=6.14.2",
-    "python-docx>=1.2.0",
-    "python-jose[cryptography]>=3.5.0",
-    "python-multipart>=0.0.32",
-    "sqlalchemy>=2.0.51",
-    "uvicorn[standard]>=0.51.0",
 ]

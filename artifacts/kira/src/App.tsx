@@ -108,6 +108,7 @@ function Router() {
       {/* Root redirect */}
       <Route path="/"><RootRedirect /></Route>
 
+      {/* Unknown route */}
       <Route component={NotFound} />
     </Switch>
   );

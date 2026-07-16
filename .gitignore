@@ -44,6 +44,12 @@ Thumbs.db
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 
-# Replit
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.db
+
+# Local dev
 .cache/
 .local/

@@ -60,7 +60,8 @@ export default function ChatPage() {
   const conversationId = convIdParam ? parseInt(convIdParam) : null;
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [sourceMode, setSourceMode] = useState("auto");
+  // backend routes attachments to the right stack (text/vision/RAG) automatically
+  const [sourceMode] = useState("auto");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -93,7 +94,7 @@ export default function ChatPage() {
     mutationFn: async ({ convId, content, attachmentIds }: { convId: number; content: string; attachmentIds: number[] }) => {
       return apiFetch<any>(`/conversations/${convId}/messages`, {
         method: "POST",
-        body: JSON.stringify({ content, attachment_ids: attachmentIds, source_mode: sourceMode }),
+    body: JSON.stringify({ content, attachment_ids: attachmentIds }),
       });
     },
     onSuccess: (data, vars) => {
@@ -193,25 +194,9 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Source mode selector (top bar) */}
+      {/* Simple top bar (no KB/source selection in user panel) */}
       <div className="flex items-center justify-between px-4 py-2 border-b bg-background/80 backdrop-blur-sm">
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground mr-1">Knowledge source:</span>
-          {(["auto", "company", "department", "project"] as const).map(mode => (
-            <button
-              key={mode}
-              onClick={() => setSourceMode(mode)}
-              className={cn(
-                "text-xs px-2 py-0.5 rounded-full border transition-colors capitalize",
-                sourceMode === mode
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "text-muted-foreground border-transparent hover:border-border"
-              )}
-            >
-              {mode}
-            </button>
-          ))}
-        </div>
+        <div className="text-xs text-muted-foreground">KIRA Chat</div>
         {conversationId && messagesQuery.data && (
           <span className="text-xs text-muted-foreground truncate max-w-48">{messagesQuery.data.title}</span>
         )}
