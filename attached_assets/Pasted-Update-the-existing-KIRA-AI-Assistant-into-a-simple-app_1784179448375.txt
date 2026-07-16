@@ -1,0 +1,633 @@
+Update the existing **KIRA AI Assistant** into a simple application with only two separate panels:
+
+1. **Admin Panel**
+2. **User Chat Panel**
+
+Do not rebuild the application from scratch.
+
+Keep the existing:
+
+* Authentication
+* Database
+* Qwen3 integration
+* vLLM integration
+* RAG system
+* Vision model integration
+* File upload
+* Image upload
+* Conversation history
+* User permissions
+
+Remove all unnecessary, duplicate, old, or unused frontend pages.
+
+# Main Login Flow
+
+Use one common login page.
+
+After login, check the user role from the database.
+
+```text
+Login
+↓
+Check User Role
+├── Admin / Super Admin → Admin Panel
+└── Employee / Normal User → User Chat Panel
+```
+
+Do not show a role-selection option on the login page.
+
+The backend must verify the user role.
+
+---
+
+# PANEL 1 — ADMIN PANEL
+
+Route:
+
+```text
+/admin
+```
+
+Only Admin and Super Admin users can access this panel.
+
+The Admin Panel should contain only application management options.
+
+Do not add normal chat features or unnecessary QA tools to the Admin Panel.
+
+## Admin Sidebar
+
+Keep only these options:
+
+* Dashboard
+* Users
+* Departments
+* Projects
+* Knowledge Bases
+* Documents
+* Access Control
+* AI Configuration
+* Prompt Management
+* Usage and Logs
+* Settings
+
+## 1. Dashboard
+
+Show:
+
+* Total users
+* Active users
+* Total conversations
+* Total knowledge bases
+* Total documents
+* Total projects
+* AI request count
+* Failed request count
+* Storage usage
+* System status
+* Recent activities
+* Recent uploads
+* Recent errors
+
+## 2. User Management
+
+Admin should be able to:
+
+* Add users
+* Edit users
+* Activate or deactivate users
+* Assign roles
+* Assign departments
+* Assign projects
+* Reset user access
+* View last login
+* View user status
+
+User fields:
+
+* Name
+* Email
+* Role
+* Department
+* Assigned projects
+* Status
+* Created date
+* Last login
+
+## 3. Department Management
+
+Admin should be able to:
+
+* Add departments
+* Edit departments
+* Delete departments
+* Assign users
+* Assign department managers
+* Link department knowledge bases
+
+## 4. Project Management
+
+Admin should be able to:
+
+* Add projects
+* Edit projects
+* Archive projects
+* Assign users
+* Remove users
+* Assign project managers
+* Link project knowledge bases
+
+## 5. Knowledge Base Management
+
+Admin should be able to:
+
+* Create knowledge bases
+* Edit knowledge bases
+* Delete knowledge bases
+* Assign access permissions
+* Link knowledge bases to a company, department, or project
+
+Knowledge base types:
+
+* Company
+* Department
+* Project
+* Restricted
+
+## 6. Document Management
+
+Admin should be able to:
+
+* Upload documents
+* View documents
+* Delete documents
+* Reprocess failed documents
+* View processing status
+* View uploader
+* View file size
+* View upload date
+
+Supported document types:
+
+* PDF
+* DOCX
+* TXT
+* CSV
+* Markdown
+
+Document status:
+
+* Uploaded
+* Processing
+* Ready
+* Failed
+
+Only Admin should be able to add approved documents to the permanent Knowledge Base.
+
+## 7. Access Control
+
+Admin should control:
+
+* User access
+* Department access
+* Project access
+* Knowledge Base access
+* File upload permission
+* Image analysis permission
+* Company knowledge permission
+* Restricted knowledge permission
+
+Permissions must be checked in the backend.
+
+## 8. AI Configuration
+
+Keep all AI settings on one page.
+
+Text model settings:
+
+* Provider
+* Model name
+* Base URL
+* API key
+* Temperature
+* Maximum tokens
+* Timeout
+* Connection status
+* Test connection
+
+Vision model settings:
+
+* Provider
+* Vision model name
+* Base URL
+* API key
+* Enable or disable image analysis
+* Connection status
+* Test connection
+
+RAG settings:
+
+* Chunk size
+* Chunk overlap
+* Top K
+* Embedding provider
+* Embedding model
+* Vector database provider
+
+Do not expose API keys after saving.
+
+## 9. Prompt Management
+
+Admin should manage:
+
+* Default assistant prompt
+* QA prompt
+* Development prompt
+* HR prompt
+* Management prompt
+* Document summary prompt
+* Image analysis prompt
+
+Admin should be able to:
+
+* Add prompts
+* Edit prompts
+* Activate prompts
+* Disable prompts
+* Set a default prompt
+
+## 10. Usage and Logs
+
+Show:
+
+* Requests per day
+* Active users
+* Most-used features
+* Failed requests
+* Average response time
+* Authentication errors
+* AI connection errors
+* RAG errors
+* Document-processing errors
+* Vision-model errors
+
+Do not show secrets in logs.
+
+## 11. Settings
+
+Admin should manage:
+
+* Application name
+* Application logo
+* Maximum file size
+* Maximum attachments per message
+* Allowed file types
+* Temporary file retention period
+* Enable or disable file upload
+* Enable or disable image upload
+* Enable or disable general AI knowledge
+* Maintenance mode
+
+---
+
+# PANEL 2 — USER CHAT PANEL
+
+Route:
+
+```text
+/chat
+```
+
+Normal users should see a simple interface similar to ChatGPT or Gemini.
+
+Do not show any Admin, AI configuration, RAG, database, model, document-management, or permission-management options.
+
+## User Sidebar
+
+Keep only:
+
+* New Chat
+* Search Chats
+* Recent Chats
+* My Files
+* Profile
+* Logout
+
+## New Chat
+
+Create a new conversation.
+
+## Search Chats
+
+Allow users to search their previous conversations.
+
+## Recent Chats
+
+Show only the current user's conversations.
+
+Allow the user to:
+
+* Open a chat
+* Rename a chat
+* Delete a chat
+* Pin important chats
+* Archive chats
+
+Automatically create a conversation title from the first message.
+
+## Main Chat Screen
+
+Create a ChatGPT-style chat interface with:
+
+* User messages
+* AI responses
+* Message input box
+* Send button
+* Attachment button
+* Stop response button
+* Copy response
+* Regenerate response
+* Edit and resend user message
+* Thumbs up and thumbs down feedback
+* Markdown rendering
+* Code blocks
+* Tables
+* Lists
+* Streaming responses
+* Source references
+* File preview
+* Image preview
+
+## Welcome Screen
+
+When there is no active conversation, show:
+
+```text
+How can KIRA help you today?
+```
+
+Show example prompt cards such as:
+
+* Summarize a document
+* Generate test cases
+* Analyze a screenshot
+* Write a professional email
+* Explain a technical topic
+* Search company knowledge
+
+## File Upload
+
+Allow users to upload files directly inside the chat.
+
+Supported documents:
+
+* PDF
+* DOCX
+* TXT
+* CSV
+* Markdown
+
+Supported images:
+
+* PNG
+* JPG
+* JPEG
+* WEBP
+
+Users should be able to:
+
+* Preview an attachment
+* Remove it before sending
+* Upload multiple files
+* See upload and processing status
+* Ask follow-up questions about the same file
+
+## Document Features
+
+Users can ask:
+
+* Summarize this document
+* Give a short or detailed summary
+* Extract key points
+* Extract requirements
+* Find risks
+* Find action items
+* Find important dates
+* Generate test cases
+* Generate test scenarios
+* Ask questions from the document
+
+## Image Features
+
+Users can ask:
+
+* What is shown in this image?
+* Read the visible text
+* Analyze this screenshot
+* Find possible UI issues
+* Find alignment or spacing issues
+* Generate a bug report
+* Explain a diagram or chart
+
+## General Chat Features
+
+Users should also be able to:
+
+* Ask normal questions
+* Generate content
+* Rewrite text
+* Explain technical topics
+* Generate code
+* Review code
+* Ask QA questions
+* Search authorized company knowledge
+
+## Automatic Backend Routing
+
+The user should not manually choose the AI model.
+
+The backend should route automatically:
+
+```text
+Text Question
+→ Qwen3
+
+Document
+→ Text Extraction
+→ Qwen3
+
+Image or Screenshot
+→ Vision Model
+
+Company Knowledge Question
+→ Permission Check
+→ RAG
+→ Qwen3
+
+Document and Image Together
+→ Process Both
+→ Generate Combined Answer
+```
+
+## Company Knowledge Access
+
+When a user asks a company-related question, automatically search only the knowledge sources they are authorized to access.
+
+```text
+User Question
+↓
+Check User Identity
+↓
+Check Department
+↓
+Check Assigned Projects
+↓
+Search Allowed Knowledge Bases
+↓
+Retrieve Relevant Information
+↓
+Send Context to Qwen3
+↓
+Show Answer and Sources
+```
+
+A user must never access another department's, project's, or restricted knowledge without permission.
+
+## Temporary Chat Files
+
+Files uploaded by users inside chat should remain temporary conversation files.
+
+They must not automatically become permanent Knowledge Base documents.
+
+```text
+User Chat Attachment
+=
+Temporary and user-specific
+
+Admin Knowledge Base Document
+=
+Permanent approved company knowledge
+```
+
+## My Files
+
+Show only files uploaded by the current user.
+
+Allow:
+
+* View file name
+* View file type
+* View upload date
+* Open related conversation
+* Delete file if permitted
+
+## User Profile
+
+Allow users to:
+
+* View name
+* View email
+* View role
+* View department
+* View assigned projects
+* Change password
+* Logout
+
+---
+
+# Security Requirements
+
+The application must:
+
+* Verify roles in the backend
+* Protect all Admin routes
+* Prevent users from opening `/admin`
+* Prevent users from accessing another user's chats
+* Prevent users from accessing another user's files
+* Prevent unauthorized Knowledge Base access
+* Never expose system prompts
+* Never expose API keys
+* Never expose internal model settings
+* Never execute uploaded files
+* Validate file extension, MIME type, and size
+* Store passwords securely
+
+If a normal user tries to open an Admin route:
+
+```text
+Access Denied
+```
+
+Then redirect them to:
+
+```text
+/chat
+```
+
+---
+
+# Remove Unnecessary Features
+
+Remove or hide:
+
+* Old QA module pages
+* Separate test case generator page
+* Separate bug report page
+* Separate requirement analyzer page
+* Separate regression page
+* Separate automation page
+* Separate code review page
+* Duplicate dashboards
+* Duplicate settings pages
+* Empty placeholder pages
+* Demo pages
+* Developer debug pages
+* Technical settings from the user panel
+* Knowledge Base management from the user panel
+* Model and RAG configuration from the user panel
+
+Do not remove the backend services used by chat.
+
+All AI features should be accessible through the single user chat screen.
+
+---
+
+# Final Application Structure
+
+```text
+LOGIN
+│
+├── ADMIN PANEL
+│   ├── Dashboard
+│   ├── Users
+│   ├── Departments
+│   ├── Projects
+│   ├── Knowledge Bases
+│   ├── Documents
+│   ├── Access Control
+│   ├── AI Configuration
+│   ├── Prompt Management
+│   ├── Usage and Logs
+│   └── Settings
+│
+└── USER PANEL
+    ├── New Chat
+    ├── Search Chats
+    ├── Recent Chats
+    ├── My Files
+    ├── Profile
+    └── Chat Screen
+```
+
+The final purpose should be:
+
+```text
+Admin
+=
+Manage the complete KIRA application
+
+User
+=
+Use KIRA through a simple ChatGPT-style chat interface
+```
+
+Modify the existing application according to this structure without breaking the current authentication, chat, Qwen3, vLLM, RAG, vision, database, document-upload, image-upload, or conversation-history functionality.

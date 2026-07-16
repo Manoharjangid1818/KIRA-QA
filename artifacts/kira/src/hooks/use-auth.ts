@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch, setToken, removeToken } from '@/lib/api';
 import type { User, LoginResponse } from '@/lib/types';
+import { isAdminRole } from '@/lib/types';
 import { useLocation } from 'wouter';
 import { useEffect } from 'react';
 
@@ -23,6 +24,14 @@ export function useAuth() {
     return () => window.removeEventListener('auth_error', handleAuthError);
   }, [setLocation, queryClient]);
 
+  const redirectByRole = (user: User) => {
+    if (isAdminRole(user.role)) {
+      setLocation('/admin');
+    } else {
+      setLocation('/chat');
+    }
+  };
+
   const loginMutation = useMutation({
     mutationFn: (data: any) => apiFetch<LoginResponse>('/auth/login', {
       method: 'POST',
@@ -31,7 +40,7 @@ export function useAuth() {
     onSuccess: (data) => {
       setToken(data.access_token);
       queryClient.setQueryData(['auth', 'me'], data.user);
-      setLocation('/dashboard');
+      redirectByRole(data.user);
     },
   });
 
@@ -43,13 +52,13 @@ export function useAuth() {
     onSuccess: (data) => {
       setToken(data.access_token);
       queryClient.setQueryData(['auth', 'me'], data.user);
-      setLocation('/dashboard');
+      redirectByRole(data.user);
     },
   });
 
   const logout = () => {
     removeToken();
-    queryClient.setQueryData(['auth', 'me'], null);
+    queryClient.clear();
     setLocation('/login');
   };
 
@@ -60,5 +69,6 @@ export function useAuth() {
     login: loginMutation,
     register: registerMutation,
     logout,
+    redirectByRole,
   };
 }

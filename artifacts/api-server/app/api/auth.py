@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -5,7 +7,7 @@ from app.api.deps import get_current_user
 from app.core.security import create_access_token, hash_password, verify_password
 from app.database.db import get_db
 from app.models.models import User
-from app.schemas.schemas import LoginRequest, RegisterRequest, TokenResponse, UserOut
+from app.schemas.schemas import LoginRequest, RegisterRequest, TokenResponse, UserOut, AdminPasswordReset
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -20,6 +22,8 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenRe
         email=payload.email.lower(),
         password_hash=hash_password(payload.password),
         full_name=payload.full_name,
+        role="employee",
+        status="active",
     )
     db.add(user)
     db.commit()
@@ -35,6 +39,14 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse
     if user is None or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
 
+    if user.status == "inactive":
+        raise HTTPException(status_code=403, detail="Account is deactivated. Contact your administrator.")
+
+    # Update last login
+    user.last_login = datetime.utcnow()
+    db.commit()
+    db.refresh(user)
+
     token = create_access_token(str(user.id))
     return TokenResponse(access_token=token, user=UserOut.model_validate(user))
 
@@ -42,3 +54,13 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse
 @router.get("/me", response_model=UserOut)
 def me(current_user: User = Depends(get_current_user)) -> UserOut:
     return UserOut.model_validate(current_user)
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(
+    payload: AdminPasswordReset,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> None:
+    current_user.password_hash = hash_password(payload.new_password)
+    db.commit()

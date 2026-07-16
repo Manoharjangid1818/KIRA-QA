@@ -4,9 +4,11 @@ from sqlalchemy.orm import Session
 
 from app.core.security import decode_access_token
 from app.database.db import get_db
-from app.models.models import User
+from app.models.models import User, UserRole
 
 bearer_scheme = HTTPBearer(auto_error=False)
+
+ADMIN_ROLES = {UserRole.super_admin, UserRole.admin}
 
 
 def get_current_user(
@@ -29,4 +31,17 @@ def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
         )
+    if user.status == "inactive":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Account is deactivated"
+        )
     return user
+
+
+def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.role not in ADMIN_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    return current_user

@@ -4,6 +4,9 @@ export const UserSchema = z.object({
   id: z.number(),
   email: z.string().email(),
   full_name: z.string(),
+  role: z.string(),
+  status: z.string(),
+  department_id: z.number().nullable().optional(),
 });
 export type User = z.infer<typeof UserSchema>;
 
@@ -13,29 +16,6 @@ export const LoginResponseSchema = z.object({
   user: UserSchema,
 });
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
-
-export const DashboardSummarySchema = z.object({
-  total_conversations: z.number(),
-  total_artifacts: z.number(),
-  artifacts_by_type: z.object({
-    requirement_analysis: z.number(),
-    test_scenario: z.number(),
-    test_case: z.number(),
-    bug_report: z.number(),
-    security: z.number(),
-  }),
-  recent_activity: z.array(z.object({
-    type: z.string(),
-    title: z.string(),
-    id: z.number(),
-    created_at: z.string(),
-  })),
-  ai_provider: z.object({
-    configured: z.boolean(),
-    model: z.string().nullable(),
-  }),
-});
-export type DashboardSummary = z.infer<typeof DashboardSummarySchema>;
 
 export const MessageSchema = z.object({
   id: z.number(),
@@ -51,72 +31,16 @@ export const ConversationSchema = z.object({
   created_at: z.string(),
   updated_at: z.string(),
   message_count: z.number().optional(),
-  messages: z.array(MessageSchema).optional(),
 });
 export type Conversation = z.infer<typeof ConversationSchema>;
 
-export const GeneratedArtifactSchema = z.object({
-  id: z.number(),
-  artifact_type: z.enum(["requirement_analysis", "test_scenario", "test_case", "bug_report", "security"]),
-  title: z.string(),
-  input_data: z.any(),
-  output_data: z.any(),
-  created_at: z.string(),
-});
-export type GeneratedArtifact = z.infer<typeof GeneratedArtifactSchema>;
-
-// Requirement Analysis
-export const RequirementAnalysisSchema = z.object({
-  summary: z.string(),
-  functional_requirements: z.array(z.string()),
-  positive_scenarios: z.array(z.string()),
-  negative_scenarios: z.array(z.string()),
-  edge_cases: z.array(z.string()),
-  missing_information: z.array(z.string()),
-  risks: z.array(z.string()),
-  questions_for_po: z.array(z.string()),
-  assumptions: z.array(z.string()),
-});
-export type RequirementAnalysis = z.infer<typeof RequirementAnalysisSchema>;
-
-// Test Scenarios
-export const TestScenarioSchema = z.object({
-  scenario_id: z.string(),
-  title: z.string(),
-  description: z.string(),
-  type: z.enum(["positive", "negative", "boundary", "edge_case"]),
-  priority: z.enum(["High", "Medium", "Low"]),
-});
-export const TestScenariosResponseSchema = z.object({
-  scenarios: z.array(TestScenarioSchema),
-});
-export type TestScenariosResponse = z.infer<typeof TestScenariosResponseSchema>;
-
-// Test Cases
-export const TestCaseSchema = z.object({
-  test_case_id: z.string(),
-  objective: z.string(),
-  preconditions: z.string(),
-  test_data: z.string(),
-  steps: z.array(z.string()),
-  expected_result: z.string(),
-  priority: z.enum(["High", "Medium", "Low"]),
-  test_type: z.string(),
-});
-export const TestCasesResponseSchema = z.object({
-  test_cases: z.array(TestCaseSchema),
-});
-export type TestCasesResponse = z.infer<typeof TestCasesResponseSchema>;
-
-// Knowledge Base / RAG
-// Chat Attachments
 export const ChatAttachmentSchema = z.object({
   id: z.number(),
   file_name: z.string(),
   file_type: z.string(),
-  file_category: z.enum(["document", "image"]),
+  file_category: z.string(),
   file_size: z.number(),
-  status: z.enum(["processing", "ready", "failed"]),
+  status: z.string(),
   error_message: z.string().nullable(),
   created_at: z.string(),
 });
@@ -126,6 +50,9 @@ export const KnowledgeBaseSchema = z.object({
   id: z.number(),
   name: z.string(),
   description: z.string(),
+  kb_type: z.string(),
+  department_id: z.number().nullable().optional(),
+  project_id: z.number().nullable().optional(),
   created_by: z.number(),
   created_at: z.string(),
   document_count: z.number(),
@@ -154,24 +81,6 @@ export const ChunkSourceSchema = z.object({
 });
 export type ChunkSource = z.infer<typeof ChunkSourceSchema>;
 
-export const RAGAnswerSchema = z.object({
-  answer: z.string(),
-  sources: z.array(ChunkSourceSchema),
-  knowledge_base_used: z.boolean(),
-});
-export type RAGAnswer = z.infer<typeof RAGAnswerSchema>;
-
-// Bug Report
-export const BugReportResponseSchema = z.object({
-  title: z.string(),
-  module: z.string(),
-  environment: z.string(),
-  preconditions: z.string(),
-  steps_to_reproduce: z.array(z.string()),
-  expected_result: z.string(),
-  actual_result: z.string(),
-  severity: z.enum(["Critical", "High", "Medium", "Low"]),
-  priority: z.enum(["High", "Medium", "Low"]),
-  information_required: z.array(z.string()),
-});
-export type BugReportResponse = z.infer<typeof BugReportResponseSchema>;
+export function isAdminRole(role: string): boolean {
+  return role === 'super_admin' || role === 'admin';
+}

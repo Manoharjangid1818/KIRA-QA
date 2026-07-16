@@ -1,0 +1,663 @@
+Upgrade the existing **KIRA AI Assistant** and clearly separate the application into two different interfaces:
+
+1. **Admin Panel**
+2. **Employee/User Panel**
+
+Do not rebuild the application from scratch.
+
+Keep all existing functionality:
+
+* Authentication
+* Qwen3 integration
+* vLLM integration
+* Vision model integration
+* RAG
+* Knowledge Bases
+* File uploads
+* Image uploads
+* Conversation history
+* Database
+* Existing frontend and backend
+
+The system should automatically open the correct interface based on the authenticated user's role.
+
+# MAIN ROLE FLOW
+
+```text
+Login
+↓
+Authenticate User
+↓
+Check Role
+├── Super Admin / Admin → Admin Panel
+└── Employee / User → User Chat Panel
+```
+
+Do not allow users to manually select whether they want the Admin or User interface.
+
+The role must come from the authenticated user record in the database.
+
+---
+
+# PART 1 — ADMIN PANEL
+
+The Admin Panel should contain all management, configuration, security, and monitoring features.
+
+Admin route:
+
+```text
+/admin
+```
+
+Only these roles can access it:
+
+* Super Admin
+* Admin
+
+Normal employees must never see or access the Admin Panel.
+
+## Admin Sidebar
+
+Create these sections:
+
+### 1. Dashboard
+
+Show:
+
+* Total Users
+* Active Users
+* Total Conversations
+* Total AI Requests
+* Total Knowledge Bases
+* Total Documents
+* Total Projects
+* Total Departments
+* Failed AI Requests
+* Storage Usage
+* System Status
+
+Also show:
+
+* Recent user activity
+* Recent document uploads
+* Recent errors
+* Recent knowledge base updates
+
+---
+
+### 2. User Management
+
+Admin should be able to:
+
+* Create user
+* Edit user
+* Activate user
+* Deactivate user
+* Delete user if allowed
+* Assign role
+* Assign department
+* Assign projects
+* Reset password/access
+* View last login
+* View account status
+* View basic usage activity
+
+User fields:
+
+* Name
+* Email
+* Role
+* Department
+* Assigned Projects
+* Status
+* Created Date
+* Last Login
+
+Roles:
+
+* Super Admin
+* Admin
+* Employee
+* QA Engineer
+* Developer
+* HR
+* Manager
+
+---
+
+### 3. Department Management
+
+Admin should be able to:
+
+* Create department
+* Edit department
+* Delete department
+* Assign users to department
+* Assign department manager
+* Create department knowledge base
+* Control department access
+
+Example departments:
+
+* QA
+* Development
+* HR
+* Sales
+* Management
+* IT
+
+---
+
+### 4. Project Management
+
+Admin should be able to:
+
+* Create project
+* Edit project
+* Archive project
+* Assign users
+* Remove users
+* Assign project manager
+* Create project knowledge base
+* Upload project documents
+* Control project permissions
+
+A user should only access project knowledge if assigned to that project.
+
+---
+
+### 5. Knowledge Base Management
+
+Admin should be able to:
+
+* Create Knowledge Base
+* Edit Knowledge Base
+* Delete Knowledge Base
+* Upload Documents
+* Delete Documents
+* Reprocess Failed Documents
+* View Processing Status
+* Assign Access Permissions
+* View Number of Documents
+* View Last Updated Date
+
+Knowledge Base types:
+
+* Company
+* Department
+* Project
+* Restricted
+
+---
+
+### 6. Document Management
+
+Admin should be able to:
+
+* Upload PDF
+* Upload DOCX
+* Upload TXT
+* Upload CSV
+* Upload Markdown
+* View document
+* Delete document
+* Reprocess document
+* View file type
+* View file size
+* View upload date
+* View uploader
+* View processing status
+
+Statuses:
+
+* Uploaded
+* Processing
+* Ready
+* Failed
+
+Do not show embedding vectors or internal technical values in the normal document list.
+
+---
+
+### 7. Access Control
+
+Create a separate Access Control section.
+
+Admin should control:
+
+* Which user can access which department
+* Which user can access which project
+* Which user can access which knowledge base
+* Which user can upload files
+* Which user can use image analysis
+* Which user can access company-wide knowledge
+* Which user can use restricted knowledge
+
+Access control must be enforced in the backend.
+
+Do not rely only on hiding frontend menus.
+
+---
+
+### 8. AI Model Settings
+
+Admin should manage the text AI model.
+
+Fields:
+
+* AI Provider
+* Model Name
+* Base URL
+* API Key
+* Temperature
+* Max Tokens
+* Timeout
+* Connection Status
+
+Example:
+
+```text
+Provider: Qwen
+Model: Qwen3
+Serving Engine: vLLM
+```
+
+Add:
+
+* Test Connection button
+* Save Configuration button
+
+Do not expose API keys after saving.
+
+---
+
+### 9. Vision Model Settings
+
+Admin should manage image analysis.
+
+Fields:
+
+* Vision Provider
+* Vision Model
+* Base URL
+* API Key
+* Timeout
+* Connection Status
+
+Example:
+
+```text
+Vision Model: Qwen3-VL
+```
+
+Add:
+
+* Test Connection
+* Enable/Disable Image Analysis
+
+---
+
+### 10. RAG Settings
+
+Admin should manage RAG configuration.
+
+Fields:
+
+* Chunk Size
+* Chunk Overlap
+* Top K
+* Embedding Provider
+* Embedding Model
+* Vector Database Provider
+
+Do not expose these settings to employees.
+
+---
+
+### 11. Prompt Management
+
+Admin should manage AI behavior.
+
+Create prompts for:
+
+* Default Assistant
+* QA
+* Development
+* HR
+* Management
+* Document Summarization
+* Image Analysis
+
+Admin should be able to:
+
+* Create Prompt
+* Edit Prompt
+* Activate Prompt
+* Disable Prompt
+* Set Default Prompt
+
+Normal users should never see the system prompt.
+
+---
+
+### 12. Conversation Audit
+
+Admin should be able to view conversation metadata only if authorized.
+
+Show:
+
+* User
+* Date
+* Number of Messages
+* AI Model Used
+* Files Attached
+* Status
+
+Do not automatically expose all private employee conversation content unless company policy and permission allow it.
+
+---
+
+### 13. Usage Analytics
+
+Show:
+
+* AI Requests per Day
+* Active Users
+* Most Used Features
+* Document Upload Count
+* Image Analysis Count
+* Failed Request Count
+* Average Response Time
+
+Keep analytics simple and useful.
+
+---
+
+### 14. System Logs
+
+Show:
+
+* AI Connection Errors
+* Document Processing Errors
+* Vision Errors
+* Authentication Failures
+* RAG Errors
+* Database Errors
+
+Do not expose secrets.
+
+---
+
+### 15. Storage Management
+
+Admin should see:
+
+* Total Storage Used
+* Temporary Attachment Storage
+* Knowledge Base Storage
+* Failed Uploads
+* Old Temporary Files
+
+Allow cleanup of expired temporary files.
+
+Do not allow accidental deletion of permanent Knowledge Base documents without confirmation.
+
+---
+
+### 16. General Settings
+
+Admin can manage:
+
+* Application Name
+* Logo
+* Maximum File Size
+* Maximum Attachments per Message
+* Allowed File Types
+* Temporary File Retention
+* Enable/Disable File Upload
+* Enable/Disable Image Upload
+* Enable/Disable General Knowledge
+* Maintenance Mode
+
+---
+
+# PART 2 — EMPLOYEE / USER PANEL
+
+User route:
+
+```text
+/chat
+```
+
+Normal employees should see a simple interface similar to ChatGPT or Gemini.
+
+Do not show technical system configuration.
+
+## User Sidebar
+
+Show only:
+
+### 1. New Chat
+
+Create a new conversation.
+
+### 2. Search Chats
+
+Search previous conversations.
+
+### 3. Recent Conversations
+
+Show conversation history.
+
+Allow:
+
+* Open conversation
+* Rename conversation
+* Delete conversation
+
+### 4. My Files
+
+Optional simple section showing files uploaded by the current user in their own conversations.
+
+Do not show company Knowledge Base management.
+
+### 5. Profile
+
+Allow user to:
+
+* View Name
+* View Email
+* View Department
+* View Assigned Projects
+* Change Password
+* Logout
+
+---
+
+# USER MAIN CHAT SCREEN
+
+The main screen should contain:
+
+* KIRA Logo
+* Conversation area
+* User messages
+* AI responses
+* Message input
+* Attachment button
+* Send button
+* Stop generation button
+* Copy response
+* Regenerate response
+
+Support:
+
+* Markdown
+* Code blocks
+* Tables
+* Lists
+* Source references
+* Streaming responses
+
+---
+
+# USER CHAT FEATURES
+
+Employees should be able to:
+
+### Ask Normal Questions
+
+Example:
+
+```text
+What is regression testing?
+```
+
+Route:
+
+```text
+Text
+→ Qwen3
+```
+
+---
+
+### Upload Documents
+
+Support:
+
+* PDF
+* DOCX
+* TXT
+* CSV
+* Markdown
+
+Users can ask:
+
+* Summarize this document
+* Extract key points
+* Find requirements
+* Find risks
+* Find action items
+* Generate test cases
+* Ask questions from the document
+
+Route:
+
+```text
+Document
+→ Text Extraction
+→ Qwen3
+```
+
+---
+
+### Upload Images
+
+Support:
+
+* PNG
+* JPG
+* JPEG
+* WEBP
+
+Users can ask:
+
+* What is shown in this image?
+* Read the visible text
+* Find UI issues
+* Analyze screenshot
+* Generate a bug report
+
+Route:
+
+```text
+Image
+→ Vision Model
+```
+
+---
+
+### Search Company Knowledge
+
+Employees should simply ask questions.
+
+Example:
+
+```text
+What is our QA defect reporting process?
+```
+
+The backend should automatically:
+
+```text
+Check User
+↓
+Check Department
+↓
+Check Assigned Projects
+↓
+Search Allowed Knowledge Bases
+↓
+Retrieve Relevant Information
+↓
+Send Context to Qwen3
+↓
+Return Answer
+```
+
+The user should not manually configure RAG.
+
+---
+
+# AUTOMATIC KNOWLEDGE ACCESS
+
+Normal users should not see technical knowledge base settings.
+
+The backend should automatically search:
+
+```text
+Company Knowledge
++
+Department Knowledge
++
+Assigned Project Knowledge
+```
+
+Only if the user has permission.
+
+Example:
+
+```text
+QA Employee
+→ Company Knowledge
+→ QA Knowledge
+→ Assigned Project Knowledge
+```
+
+A QA employee must not automatically access HR-restricted knowledge.
+
+---
+
+# OPTIONAL USER SOURCE MODE
+
+Add a simple source selector near the chat input:
+
+```text
+Auto
+Company
+Department
+Project
+```
+
+Default:
+
+```text
+Auto
+```
+
+Do not show:
+
+* Embedding model
+* Chunk size
+* Vector database
+* Model endpoint
