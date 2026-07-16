@@ -80,11 +80,19 @@ class AIService:
         try:
             async with httpx.AsyncClient(timeout=300.0) as client:
                 response = await client.post(url, headers=headers, json=payload)
-                response.raise_for_status()
+                if response.status_code != 200:
+                    try:
+                        err_json = response.json()
+                        err_detail = err_json.get("error", {}).get("message", response.text)
+                    except Exception:
+                        err_detail = response.text
+                    raise AIServiceError(f"HTTP {response.status_code}: {err_detail}")
                 data = response.json()
                 raw = data["choices"][0]["message"]["content"]
                 return _strip_think_blocks(raw)
-        except (httpx.HTTPError, KeyError, IndexError) as exc:
+        except Exception as exc:
+            if isinstance(exc, AIServiceError):
+                raise
             raise AIServiceError(f"AI provider request failed: {exc}") from exc
 
     async def chat_reply(self, history: list[dict]) -> str:
