@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, getToken, API_BASE } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -54,9 +54,8 @@ export default function AdminDocuments() {
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
-      const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '') + '/api';
-      const token = localStorage.getItem('kira_auth_token');
-      const res = await fetch(`${baseUrl}/knowledge-bases/${selectedKb}/documents`, {
+      const token = getToken();
+      const res = await fetch(`${API_BASE}/knowledge-bases/${selectedKb}/documents`, {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,

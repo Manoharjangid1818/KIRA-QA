@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_accessible_kbs_query
 from app.database.db import get_db
 from app.models.models import ChatAttachment, Conversation, Message, User
 from app.schemas.schemas import (
@@ -15,6 +15,8 @@ from app.schemas.schemas import (
     SendMessageResponse,
 )
 from app.services.ai_service import AIServiceError, ai_service
+from app.services.rag_service import retrieve_context_multi
+
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 
@@ -246,12 +248,14 @@ async def send_message(
 
     # CASE 3: no attachments → normal chat (with optional RAG)
     else:
+        from app.services.rag_service import build_rag_prompt, retrieve_context
+
+        # If a specific KB is requested:
         if payload.knowledge_base_id is not None:
             from app.models.models import KnowledgeBase
-            from app.services.rag_service import build_rag_prompt, retrieve_context
             kb = (
-                db.query(KnowledgeBase)
-                .filter(KnowledgeBase.id == payload.knowledge_base_id, KnowledgeBase.created_by == user.id)
+                get_accessible_kbs_query(db, user)
+                .filter(KnowledgeBase.id == payload.knowledge_base_id)
                 .first()
             )
             if kb is None:
@@ -269,10 +273,30 @@ async def send_message(
             except Exception:
                 pass
 
+        # If NO specific KB is requested, automatically check all accessible KBs for relevant documents:
+        else:
+            try:
+                from app.models.models import KnowledgeBase
+                accessible_kb_ids = [kb.id for kb in get_accessible_kbs_query(db, user).all()]
+                if accessible_kb_ids:
+                    context = await retrieve_context_multi(db, accessible_kb_ids, payload.content)
+                    # Use a similarity threshold of 0.25 to check if the question matches any document
+                    if context.sources and any(s.similarity_score >= 0.25 for s in context.sources):
+                        rag_prompt = build_rag_prompt(payload.content, context, allow_general=True)
+                        history[-1] = {"role": "user", "content": rag_prompt}
+                        rag_sources = [
+                            {"document_id": s.document_id, "file_name": s.file_name,
+                             "chunk_index": s.chunk_index, "similarity_score": s.similarity_score}
+                            for s in context.sources
+                        ]
+            except Exception:
+                pass
+
         try:
             reply = await ai_service.chat_reply(history)
         except AIServiceError as exc:
             raise HTTPException(status_code=502, detail=str(exc)) from exc
+
 
     # ── Save assistant message ────────────────────────────────────────────────
     assistant_message = Message(

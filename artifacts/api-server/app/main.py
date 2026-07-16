@@ -97,6 +97,7 @@ def healthz() -> dict:
     return {"status": "ok"}
 
 
+
 app.include_router(auth.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")

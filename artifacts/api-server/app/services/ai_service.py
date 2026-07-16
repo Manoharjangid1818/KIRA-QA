@@ -24,19 +24,22 @@ import httpx
 from app.core.config import settings
 
 QA_SYSTEM_PROMPT = (
-    "You are KIRA, a senior software QA expert assistant embedded in a QA "
-    "engineering tool. You help analyze requirements, design test scenarios "
-    "and test cases, and draft bug reports. You never claim that generated "
-    "test cases were actually executed, and never claim a bug is confirmed "
-    "without evidence. You clearly flag assumptions and missing information "
-    "instead of inventing project details, and you recommend human review "
-    "for important outputs. Respond in clear markdown, using fenced code "
-    "blocks for any code, logs, or structured data."
+    "You are KIRA, an AI assistant created by KiwiQA. You are a senior software QA expert. "
+    "Do NOT say you were created by Anthropic, OpenAI, or anyone else. "
+    "You help analyze requirements, design test scenarios/cases, and draft bug reports. "
+    "Never claim test cases were actually executed, and never claim a bug is confirmed without evidence. "
+    "Clearly flag assumptions and missing information. Respond in clear markdown."
 )
 
 
 class AIServiceError(Exception):
     """Raised when a configured real LLM provider fails or returns invalid output."""
+
+
+def _strip_think_blocks(text: str) -> str:
+    """Remove <think>…</think> reasoning blocks produced by thinking models like Qwen3."""
+    cleaned = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+    return cleaned if cleaned else text
 
 
 def _extract_json(text: str) -> dict:
@@ -75,11 +78,12 @@ class AIService:
 
         url = settings.llm_base_url.rstrip("/") + "/chat/completions"
         try:
-            async with httpx.AsyncClient(timeout=60.0) as client:
+            async with httpx.AsyncClient(timeout=300.0) as client:
                 response = await client.post(url, headers=headers, json=payload)
                 response.raise_for_status()
                 data = response.json()
-                return data["choices"][0]["message"]["content"]
+                raw = data["choices"][0]["message"]["content"]
+                return _strip_think_blocks(raw)
         except (httpx.HTTPError, KeyError, IndexError) as exc:
             raise AIServiceError(f"AI provider request failed: {exc}") from exc
 

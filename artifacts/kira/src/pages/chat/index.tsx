@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, getToken, API_BASE } from "@/lib/api";
 import type { Message, Conversation } from "@/lib/types";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -149,12 +149,11 @@ export default function ChatPage() {
       setAttachments(prev => [...prev, att]);
 
       try {
-        const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '') + '/api';
-        const token = localStorage.getItem('kira_auth_token');
+        const token = getToken();
         const formData = new FormData();
         formData.append("file", file);
 
-        const res = await fetch(`${baseUrl}/attachments/upload`, {
+        const res = await fetch(`${API_BASE}/attachments/upload`, {
           method: "POST",
           headers: token ? { Authorization: `Bearer ${token}` } : {},
           body: formData,

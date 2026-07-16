@@ -12,7 +12,7 @@ import asyncio
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_accessible_kbs_query
 from app.database.db import get_db
 from app.models.models import Document, DocumentChunk, KnowledgeBase, ProcessingStatus, User
 from app.schemas.schemas import (
@@ -35,11 +35,20 @@ MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20 MB
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _get_owned_kb(db: Session, kb_id: int, user: User) -> KnowledgeBase:
+    # Strict ownership (for modification/deletion)
     kb = (
         db.query(KnowledgeBase)
         .filter(KnowledgeBase.id == kb_id, KnowledgeBase.created_by == user.id)
         .first()
     )
+    if kb is None:
+        raise HTTPException(status_code=404, detail="Knowledge base not found")
+    return kb
+
+
+def _get_accessible_kb(db: Session, kb_id: int, user: User) -> KnowledgeBase:
+    # Read-only/query access (for employee retrieval)
+    kb = get_accessible_kbs_query(db, user).filter(KnowledgeBase.id == kb_id).first()
     if kb is None:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
     return kb
@@ -51,6 +60,9 @@ def _kb_to_out(kb: KnowledgeBase, db: Session) -> KnowledgeBaseOut:
         id=kb.id,
         name=kb.name,
         description=kb.description,
+        kb_type=kb.kb_type,
+        department_id=kb.department_id,
+        project_id=kb.project_id,
         created_by=kb.created_by,
         created_at=kb.created_at,
         document_count=count,
@@ -65,8 +77,7 @@ def list_knowledge_bases(
     user: User = Depends(get_current_user),
 ) -> list[KnowledgeBaseOut]:
     kbs = (
-        db.query(KnowledgeBase)
-        .filter(KnowledgeBase.created_by == user.id)
+        get_accessible_kbs_query(db, user)
         .order_by(KnowledgeBase.created_at.desc())
         .all()
     )
@@ -96,7 +107,7 @@ def get_knowledge_base(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> KnowledgeBaseOut:
-    kb = _get_owned_kb(db, kb_id, user)
+    kb = _get_accessible_kb(db, kb_id, user)
     return _kb_to_out(kb, db)
 
 
@@ -119,7 +130,8 @@ def list_documents(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> list[DocumentOut]:
-    _get_owned_kb(db, kb_id, user)
+    _get_accessible_kb(db, kb_id, user)
+
     docs = (
         db.query(Document)
         .filter(Document.knowledge_base_id == kb_id)
@@ -212,7 +224,7 @@ async def ask_knowledge_base(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> RAGAnswerResponse:
-    _get_owned_kb(db, kb_id, user)
+    _get_accessible_kb(db, kb_id, user)
 
     # Ensure at least one ready document exists
     ready_count = (

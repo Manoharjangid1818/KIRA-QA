@@ -45,3 +45,21 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
             detail="Admin access required",
         )
     return current_user
+
+
+def get_accessible_kbs_query(db: Session, user: User):
+    from app.models.models import KnowledgeBase
+    
+    # Admins see everything
+    if user.role in ("super_admin", "admin"):
+        return db.query(KnowledgeBase)
+    
+    # Standard user check
+    project_ids = [up.project_id for up in user.user_projects]
+    return db.query(KnowledgeBase).filter(
+        (KnowledgeBase.kb_type == "company") |
+        (KnowledgeBase.created_by == user.id) |
+        ((KnowledgeBase.kb_type == "department") & (KnowledgeBase.department_id == user.department_id)) |
+        ((KnowledgeBase.kb_type == "project") & (KnowledgeBase.project_id.in_(project_ids) if project_ids else False))
+    )
+

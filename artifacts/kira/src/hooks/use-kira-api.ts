@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, getToken, API_BASE } from '@/lib/api';
 import type { 
   DashboardSummary, 
   Conversation, 
@@ -68,13 +68,12 @@ export function useSendMessage(conversationId: number) {
 // ── Chat Attachments ──────────────────────────────────────────────────────────
 
 export function useUploadChatAttachment() {
-  const baseUrl = (import.meta.env.BASE_URL as string).replace(/\/$/, '');
   return useMutation({
     mutationFn: async (file: File) => {
-      const token = localStorage.getItem('kira_auth_token');
+      const token = getToken();
       const form = new FormData();
       form.append('file', file);
-      const res = await fetch(`${baseUrl}/api/attachments`, {
+      const res = await fetch(`${API_BASE}/attachments`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: form,
@@ -238,11 +237,10 @@ export function useUploadDocument(kbId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (file: File) => {
-      const token = localStorage.getItem('kira_auth_token');
-      const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '') + '/api';
+      const token = getToken();
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch(`${baseUrl}/knowledge-bases/${kbId}/documents`, {
+      const res = await fetch(`${API_BASE}/knowledge-bases/${kbId}/documents`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,

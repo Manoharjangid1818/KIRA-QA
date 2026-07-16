@@ -9,20 +9,21 @@ export class ApiError extends Error {
 }
 
 export function getToken() {
-  return localStorage.getItem('kira_auth_token');
+  return sessionStorage.getItem('kira_auth_token');
 }
 
 export function setToken(token: string) {
-  localStorage.setItem('kira_auth_token', token);
+  sessionStorage.setItem('kira_auth_token', token);
 }
 
 export function removeToken() {
-  localStorage.removeItem('kira_auth_token');
+  sessionStorage.removeItem('kira_auth_token');
 }
 
+export const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.BASE_URL.replace(/\/$/, '') + '/api');
+
 export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '') + '/api';
-  const url = baseUrl + (endpoint.startsWith('/') ? endpoint : `/${endpoint}`);
+  const url = API_BASE + (endpoint.startsWith('/') ? endpoint : `/${endpoint}`);
   
   const headers = new Headers(options.headers);
   headers.set('Content-Type', 'application/json');
